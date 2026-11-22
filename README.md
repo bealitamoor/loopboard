@@ -5,8 +5,13 @@
 For developers, designers, social media posters, planners and SEO writers who work with Claude Code and want their
 projects, tasks and agent instructions in plain files instead of another SaaS.
 
-![The loopboard board](docs/screenshot.png)
-<!-- TODO: add docs/screenshot.png (board with progress dots, a detail page, a comment thread). No personal data. -->
+![Loopboard overview: every project, the agent inbox and status counts](docs/screenshot.png)
+
+<details><summary>An item page: stages, actions and the comment thread with your agent</summary>
+
+![Loopboard item page with a comment thread](docs/screenshot-item.png)
+
+</details>
 
 ## Install
 

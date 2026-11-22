@@ -29,7 +29,7 @@ Do these in order for every release.
       `claude-skills`.
 - [ ] Check the copyright holder in `LICENSE` and the `author` / `repository` / `homepage` fields in `plugin.json`.
 - [ ] Confirm `bealitamoor` is the GitHub account you publish under (README and docs use it).
-- [ ] Add `docs/screenshot.png` (referenced from the README) and check it contains no personal data.
+- [ ] Refresh `docs/screenshot.png` / `docs/screenshot-item.png` from `examples/demo-workspace` when the UI changes (demo data only, never a real workspace).
 - [ ] Plugin names may not start with `claude-`, `anthropic-` or `cc-plugin-`; confirm the name is still allowed.
 
 ## Optional listings
