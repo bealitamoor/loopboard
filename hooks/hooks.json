@@ -1,0 +1,17 @@
+{
+  "description": "Loopboard guard: threads and board rows change only through `loopboard thread`; open hub comments are shown at session start; STATUS.md must be updated before a session that changed a workstream ends. Does nothing outside the configured roots.",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/engine/guard.mjs\" start" }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit|Read|Grep", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/engine/guard.mjs\" pre" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit|NotebookEdit", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/engine/guard.mjs\" post" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/engine/guard.mjs\" stop" }] }
+    ]
+  }
+}

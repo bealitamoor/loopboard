@@ -1,0 +1,25 @@
+{
+  "name": "loopboard",
+  "owner": {
+    "name": "Ali Tamoor",
+    "url": "https://github.com/bealitamoor"
+  },
+  "metadata": {
+    "description": "Loopboard: a local STATUS.md dashboard where every item has a comment thread for your AI agent, plus skills for developers, designers, social, planners and SEO."
+  },
+  "plugins": [
+    {
+      "name": "loopboard",
+      "source": "./",
+      "description": "A local dashboard over plain STATUS.md files, with per-item comment threads for AI coding agents and hooks that keep agents on the rules.",
+      "version": "0.1.0",
+      "license": "MIT",
+      "keywords": [
+        "dashboard",
+        "status",
+        "project-management",
+        "agents"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="200" viewBox="0 0 480 200" role="img">
+  <title>Three logo directions</title>
+  <rect width="480" height="200" fill="#f9fafb"/>
+  <g font-family="Arial, sans-serif" font-size="13" fill="#374151" text-anchor="middle">
+    <path d="M50 50 h60 l20 20 v70 h-80 z" fill="#4f46e5"/><text x="90" y="175">A  folded page</text>
+    <path d="M230 140 l-10 -70 l20 -20 l20 20 z" fill="#0ea5e9"/><text x="240" y="175">B  pencil tip</text>
+    <rect x="360" y="55" width="80" height="60" rx="14" fill="#16a34a"/><path d="M385 115 l-8 22 l28 -22 z" fill="#16a34a"/><text x="400" y="175">C  note bubble</text>
+  </g>
+</svg>

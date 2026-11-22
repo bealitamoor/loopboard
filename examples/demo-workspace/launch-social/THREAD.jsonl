@@ -1,0 +1,4 @@
+{"op":"add","cid":"d1e2f3","at":"2026-11-20T18:20:00Z","item":"LS-4","kind":"todo","by":"you","text":"Shorten the post to under 200 characters and keep one emoji at most. Put the link in the first comment."}
+{"op":"add","cid":"d4a5b6","at":"2026-11-20T18:45:00Z","item":"LS-4","kind":"answer","by":"agent","text":"Shortened to 168 characters, no emoji, link moved to the first comment. See the kit.","re":"d1e2f3"}
+{"op":"resolve","cid":"d1e2f3","at":"2026-11-20T18:46:00Z","by":"agent","note":"Draft updated in posts/ls-4.md"}
+{"op":"add","cid":"d7c8e9","at":"2026-11-20T19:00:00Z","item":"LS-5","kind":"question","by":"you","text":"Can we reuse last week's poll format for the question of the day?"}

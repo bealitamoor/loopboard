@@ -1,0 +1,12 @@
+# secrets and generated output (the page, token, logs and caches live in the data dir, not in this repo)
+*.token
+hub.token
+/index.html
+.hub/
+*.log
+.DS_Store
+node_modules/
+.env
+.env.*
+tmp/
+.tmp/

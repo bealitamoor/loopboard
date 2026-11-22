@@ -1,0 +1,5 @@
+{"op":"add","cid":"c1a2b3","at":"2026-11-16T09:12:00Z","item":"PN-3","kind":"todo","by":"you","text":"Use keep-both for conflicts: never drop a version. Add a test with two offline edits, then update the row."}
+{"op":"add","cid":"c4d5e6","at":"2026-11-16T10:40:00Z","item":"PN-3","kind":"question","by":"agent","text":"Should keep-both show a merge screen, or save the second copy as a new note titled with the device name? I recommend the second option for 0.4.","re":"c1a2b3"}
+{"op":"edit","at":"2026-11-16T10:41:00Z","item":"PN-3","field":"status","from":"doing","to":"waiting","by":"agent"}
+{"op":"add","cid":"c7f8a9","at":"2026-11-17T08:05:00Z","item":"PN-5","kind":"note","by":"you","text":"Search should ignore accents. Low priority until sync is done."}
+{"op":"add","cid":"cb0c1d","at":"2026-11-17T08:30:00Z","item":"PROJECT","kind":"decision","by":"you","text":"Beta 0.4 ships with sync and search only. Export moves to 0.5."}

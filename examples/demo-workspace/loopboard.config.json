@@ -1,0 +1,10 @@
+{
+  "roots": ["."],
+  "mode": "multi",
+  "areas": ["Product", "Marketing", "Design"],
+  "skip": ["node_modules", ".git", "dist", "build", "vendor", ".venv"],
+  "port": 4747,
+  "editor": "code",
+  "kinds": {},
+  "guard": true
+}
