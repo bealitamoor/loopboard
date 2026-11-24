@@ -5,10 +5,11 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
   .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, h) => /^\s*(javascript|data|vbscript):/i.test(h) ? t : h.startsWith('hubfile:') ? `<a href="${esc(U(decodeURIComponent(h.slice(8))))}" target="_blank" rel="noopener">${t}</a>` : /^(https?:|mailto:|#)/i.test(h) ? `<a href="${h}" target="_blank" rel="noopener">${t}</a>` : t);
-function md(src) {
+function md(src) { // lines of one paragraph or list item are joined (soft wraps), not turned into hard breaks
   if (!src || !src.trim()) return '<p class="empty">nothing</p>';
-  const L = src.split('\n'); let h = '', list = 0;
-  const close = () => { if (list) { h += '</ul>'; list = 0; } };
+  const L = src.split('\n'); let h = '', list = 0, para = [], li = null;
+  const flush = () => { if (li !== null) { h += '<li>' + inline(li) + '</li>'; li = null; } if (para.length) { h += '<p>' + inline(para.join(' ')) + '</p>'; para = []; } };
+  const close = () => { flush(); if (list) { h += '</ul>'; list = 0; } };
   for (let i = 0; i < L.length; i++) {
     const l = L[i];
     if (/^\s*\|/.test(l) && /^\s*\|?\s*:?-{2,}/.test(L[i + 1] || '')) {
@@ -18,11 +19,13 @@ function md(src) {
       i--; h += '</table></div>'; continue;
     }
     if (/^```/.test(l)) { close(); let b = ''; i++; while (i < L.length && !/^```/.test(L[i])) b += L[i++] + '\n'; h += '<pre>' + esc(b) + '</pre>'; continue; }
-    const b = l.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/); if (b) { if (!list) { h += '<ul>'; list = 1; } h += '<li>' + inline(b[1]) + '</li>'; continue; }
-    close();
-    const bq = l.match(/^\s*>\s?(.*)/); if (bq) { h += '<p class="meta">' + inline(bq[1]) + '</p>'; continue; }
-    const hd = l.match(/^(#{1,6})\s+(.*)/); if (hd) { h += `<h4>${inline(hd[2])}</h4>`; continue; }
-    if (l.trim()) h += '<p>' + inline(l) + '</p>';
+    const b = l.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/); if (b) { flush(); if (!list) { h += '<ul>'; list = 1; } li = b[1]; continue; }
+    if (li !== null && /^\s+\S/.test(l)) { li += ' ' + l.trim(); continue; }
+    if (!l.trim()) { close(); continue; }
+    const bq = l.match(/^\s*>\s?(.*)/), hd = l.match(/^(#{1,6})\s+(.*)/);
+    if (bq || hd) { close(); h += bq ? '<p class="meta">' + inline(bq[1]) + '</p>' : `<h4>${inline(hd[2])}</h4>`; continue; }
+    if (list) close();
+    para.push(l.trim());
   }
   close(); return h;
 }
@@ -63,6 +66,7 @@ const IC = {
   blocked: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
   done: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
   all: 'M4 6h16M4 10h16M4 14h16M4 18h16',
+  skills: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
   logo: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z',
 };
 const ic = (k, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[k] || IC.all}"/></svg>`;
@@ -70,10 +74,11 @@ const SCOL = { todo: 'c-gray', doing: 'c-blue', waiting: 'c-yellow', blocked: 'c
 const statCards = (counts, total, allLabel) => `<div class="stats">${D.STATUSES.map(k => `<button class="stat" data-group="${k}">${ic(k, SCOL[k])}<dl><dt>${k}</dt><dd>${counts[k]}</dd></dl></button>`).join('')}<button class="stat on" data-group="">${ic('all', 'c-indigo')}<dl><dt>${allLabel}</dt><dd>${total}</dd></dl></button></div>`;
 
 // ---------- sidebar (bg-gray-900) + white top bar + page header ----------
-function side(cur) {
+function side(cur, page) {
   const total = D.streams.reduce((a, s) => a + s.waiting.length, 0), single = D.mode === 'single';
   let h = `<div class="logo-row"><a class="brand" href="#overview"><span class="logo">${ic('logo', 'sm')}</span>Loopboard</a></div><nav>`;
-  if (!single) h += `<a class="it${cur ? '' : ' on'}" href="#overview">${ic('home')}<span class="t">Overview</span>${total ? `<span class="wb">${total}</span>` : ''}</a>`;
+  if (!single) h += `<a class="it${cur || page ? '' : ' on'}" href="#overview">${ic('home')}<span class="t">Overview</span>${total ? `<span class="wb">${total}</span>` : ''}</a>`;
+  h += `<a class="it${page === 'skills' ? ' on' : ''}" href="#skills" title="Which skill to use for what">${ic('skills')}<span class="t">Skills</span><span class="cb">${SK.count}</span></a>`;
   for (const a of [...new Set(D.streams.map(s => s.area || 'Other'))]) {
     if (!single) h += `<div class="div"></div><div class="grp">${esc(a)}</div>`;
     for (const s of D.streams.filter(x => (x.area || 'Other') === a))
@@ -82,12 +87,14 @@ function side(cur) {
   h += `</nav><div class="foot">${RO ? '' : `<a class="rb" data-rebuild href="#" title="Re-read every STATUS.md">${ic('refresh')}Rebuild hub</a>`}<div class="user"><span class="av">PH</span><div style="min-width:0"><b>${D.streams.length} workstream${D.streams.length === 1 ? '' : 's'}</b><span>Built ${esc(new Date(D.built).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span></div></div></div>`;
   $('#side').innerHTML = h;
 }
-function nav(s, tab, crumb) {
+function nav(s, tab, crumb, page) {
   const tabs = s ? [['', 'Board', s.rows.length], ['notes', 'Notes', s.waiting.length || ''], ['pages', 'Pages & visuals', s.pages.length], ['talk', 'Discussion', (s.thread[PROJ] || []).filter(x => x.state === 'open').length || ''], ...(s.rules ? [['rules', 'Rules', '']] : [])] : [];
-  $('#top').innerHTML = `<div class="crumb">${s ? `<a href="${D.mode === 'single' ? '#' + s.id : '#overview'}" style="color:inherit;text-decoration:none">${esc(D.mode === 'single' ? 'Project' : s.area || 'Hub')}</a> / <b>${esc(s.title)}</b>${crumb ? ' / ' + esc(crumb) : ''}` : '<b>Overview</b>'}</div><input id="q" placeholder="Search${s ? ' this board' : ' everything'}…" autocomplete="off" value="${esc(Q)}">${RO ? `<span class="chip s-waiting" title="Opened as a file: writes are off. Serve it with loopboard serve and open ${esc(D.url)}">Read-only</span>` : `<a class="btn big" data-rebuild href="#" title="Re-read every STATUS.md">${ic('refresh', 'sm')}Rebuild</a>`}`;
-  $('#nav').innerHTML = crumb ? '' : s
+  $('#top').innerHTML = `<div class="crumb">${page === 'skills' ? (crumb ? `<a href="#skills" style="color:inherit;text-decoration:none">Skills</a> / <b>${esc(crumb)}</b>` : '<b>Skills</b>') : s ? `<a href="${D.mode === 'single' ? '#' + s.id : '#overview'}" style="color:inherit;text-decoration:none">${esc(D.mode === 'single' ? 'Project' : s.area || 'Hub')}</a> / <b>${esc(s.title)}</b>${crumb ? ' / ' + esc(crumb) : ''}` : '<b>Overview</b>'}</div><input id="q" placeholder="Search${page === 'skills' ? ' skills' : s ? ' this board' : ' everything'}…" autocomplete="off" value="${esc(Q)}">${RO ? `<span class="chip s-waiting" title="Opened as a file: writes are off. Serve it with loopboard serve and open ${esc(D.url)}">Read-only</span>` : `<a class="btn big" data-rebuild href="#" title="Re-read every STATUS.md">${ic('refresh', 'sm')}Rebuild</a>`}`;
+  $('#nav').innerHTML = crumb ? '' : page === 'skills'
+    ? `<div class="ph"><div><h1>Skills catalog</h1><p>Which skill to use for what. Copy the command, paste it into your agent, or open a skill to read how it works.</p></div></div>`
+    : s
     ? `<div class="ph"><div><h1>${hd(s.health)}${esc(s.title)}</h1><p>${inline(s.summary)} <span class="pname">· ${esc(s.kind)} · ${esc(s.phase)} · ${ageTxt(s)}</span></p></div></div><div class="tabs">${tabs.map(([k, l, n]) => `<a href="#${s.id}${k ? '/' + k : ''}" class="${tab === k ? 'on' : ''}">${l}${n !== '' ? `<i>${n}</i>` : ''}</a>`).join('')}</div>`
-    : `<div class="ph"><div><h1>Overview</h1><p>Every workstream, read from its STATUS.md. Open a board, comment on any item, and agents pick it up from the inbox.</p></div></div>`;
+    : `<div class="ph"><div><h1>Overview</h1><p>Every workstream, read from its STATUS.md. Open a board, comment on any item, and agents pick it up from the inbox.</p>${SK.count ? '<p class="tip">Not sure which skill? <a href="#skills">Browse the Skills catalog →</a></p>' : ''}</div></div>`;
   $('#q').addEventListener('input', e => { Q = e.target.value; try { sessionStorage.setItem('hubQ', Q); } catch { } filter(); });
 }
 
@@ -257,13 +264,65 @@ function wireBoard(s) {
 }
 
 // ---------- routing, search, filters ----------
-let Q = '', G = '';
+let Q = '', G = '', R = '';
+try { R = sessionStorage.getItem('hubR') || ''; } catch { }
+
+// ---------- skills catalog: every skill is untrusted text, so it is only ever escaped (esc) or run through md() ----------
+const SK = D.skills || { items: [], count: 0, roles: [], sources: {} };
+const skById = id => SK.items.find(k => k.id === id);
+const skSrc = k => `<span class="chip sk-${esc(k.source)}">${esc(k.sourceLabel)}</span>`;
+const kb = n => n < 1024 ? n + ' B' : (n / 1024).toFixed(1) + ' KB';
+function skillCard(k) {
+  return `<article class="skcard" data-text="${esc((k.name + ' ' + k.description).toLowerCase())}" data-role="${esc(k.role)}">
+<div class="skh"><a class="skn" href="#skills/${encodeURIComponent(k.id)}">${esc(k.name)}</a>${skSrc(k)}<span class="spacer"></span>${copyBtn(k.copy, 'Copy')}</div>
+<p class="sks">${esc(k.summary || 'No description.')}</p>
+${k.hint ? `<div class="skhint"><span>Arguments</span><code>${esc(k.hint)}</code></div>` : ''}
+${k.when ? `<div class="skwhen"><b>When to use</b><p>${esc(k.when)}</p></div>` : ''}
+<div class="skfoot"><code>${esc(k.copy)}</code><a href="#skills/${encodeURIComponent(k.id)}">Details →</a></div></article>`;
+}
+function skillsPage() {
+  if (!SK.count) return `<div class="field"><p class="meta">No skills found. The Loopboard plugin ships its own in <code>skills/</code>; project skills live in <code>.claude/skills/&lt;name&gt;/SKILL.md</code>${SK.userEnabled === false ? ' (user skills are hidden: <code>skills.user</code> is false)' : ', user skills in <code>~/.claude/skills</code>'}.</p></div>`;
+  const chips = [{ role: '', count: SK.count }, ...SK.roles].map(r => `<button class="rchip${r.role === R ? ' on' : ''}" data-rchip="${esc(r.role)}">${esc(r.role || 'All')}<i>${r.count}</i></button>`).join('');
+  let h = `<div class="rchips">${chips}</div>`;
+  for (const { role } of SK.roles) {
+    const list = SK.items.filter(k => k.role === role);
+    if (role !== 'Other') { h += `<section class="skgrp"><h3>${esc(role)} <small class="meta">${list.length}</small></h3><div class="skgrid">${list.map(skillCard).join('')}</div></section>`; continue; }
+    for (const src of ['project', 'user', 'extra', 'plugin']) {
+      const sub = list.filter(k => k.source === src);
+      if (sub.length) h += `<section class="skgrp" data-role="Other"><h3>Other · ${esc(sub[0].sourceLabel)} <small class="meta">${sub.length}</small></h3><div class="skgrid">${sub.map(skillCard).join('')}</div></section>`;
+    }
+  }
+  h += `<p class="empty" id="skempty" hidden>No skill matches.</p>`;
+  const bits = Object.entries(SK.sources || {}).filter(([, n]) => n).map(([k, n]) => `${esc(k)} ${n}`).join(' · ');
+  h += `<p class="meta sknote">${SK.count} skill${SK.count === 1 ? '' : 's'}${bits ? ' (' + bits + ')' : ''}${SK.capped ? ' · the catalog stops at 500 skills' : ''}${SK.userEnabled === false ? ' · user skills are hidden (<code>skills.user</code> is false)' : ''}. Same list in the terminal: <code>loopboard skills</code>.</p>`;
+  return h;
+}
+function skillDetail(k) {
+  if (!k) return `<p class="dtop"><a class="btn" href="#skills">← Skills</a></p><div class="field"><p class="meta">No skill with that name in the catalog.</p></div>`;
+  const files = [['references', k.references || []], ['scripts', k.scripts || []]].filter(([, l]) => l.length);
+  return `<div class="dtop"><a class="btn" href="#skills">← Skills</a></div>
+<div class="dhead"><div class="dtitle"><h2>${esc(k.name)}</h2><p class="meta">${skSrc(k)} <span class="chip">${esc(k.role)}</span> <span class="mono">${esc(k.shown)}</span></p></div>${copyBtn(k.copy, 'Copy ' + k.copy)}${openBtn('editor', k.file, 'Open in editor')}${openBtn('reveal', k.dir, 'Reveal folder')}</div>
+<div class="field" style="margin-top:20px"><div class="fhead"><b>About</b></div><p class="fval">${esc(k.summary || 'No description in the SKILL.md frontmatter.')}</p>${k.when ? `<div class="skwhen"><b>When to use</b><p>${esc(k.when)}</p></div>` : ''}
+${k.hint ? `<div class="skhint"><span>Arguments</span><code>${esc(k.hint)}</code></div>` : ''}<div class="row" style="margin-top:12px"><code>${esc(k.copy)}</code></div></div>
+${files.map(([kind, l]) => `<div class="field"><div class="fhead"><b>${kind}/</b><span class="meta">${l.length} file${l.length === 1 ? '' : 's'}</span></div><div class="tablewrap"><table class="files"><tbody>${l.map(f => `<tr><td>${esc(f.name)}</td><td class="meta">${esc(kb(f.size))}</td><td><div class="row">${openBtn('editor', f.abs, 'Editor')}</div></td></tr>`).join('')}</tbody></table></div></div>`).join('')}
+<div class="panel md skbody"><div class="fhead"><b>SKILL.md</b>${k.bodyTruncated ? '<span class="warn">shortened: the file is larger than the page keeps (200 KB per skill)</span>' : ''}</div>${md(k.body)}</div>`;
+}
+
 try { Q = sessionStorage.getItem('hubQ') || ''; } catch { }
 function route() {
   const [sid, tab = '', a, b] = decodeURIComponent(location.hash.slice(1) || (D.mode === 'single' && D.streams[0] ? D.streams[0].id : 'overview')).split('/');
-  const s = findS(sid);
-  side(s?.id); G = '';
-  if (!s) { nav(null, ''); $('#main').innerHTML = overview(); document.title = 'Loopboard'; }
+  const isSk = sid === 'skills', s = isSk ? null : findS(sid);
+  side(s?.id, isSk ? 'skills' : ''); G = '';
+  if (isSk) {
+    const k = tab ? skById(tab) : null;
+    nav(null, '', tab ? (k ? k.name : tab) : '', 'skills');
+    $('#main').innerHTML = tab ? skillDetail(k) : skillsPage();
+    document.title = (k ? k.name + ' · ' : '') + 'Skills · Loopboard';
+    document.querySelectorAll('[data-rchip]').forEach(btn => btn.addEventListener('click', () => {
+      R = btn.dataset.rchip; try { sessionStorage.setItem('hubR', R); } catch { }
+      document.querySelectorAll('[data-rchip]').forEach(x => x.classList.toggle('on', x === btn)); filter();
+    }));
+  } else if (!s) { nav(null, ''); $('#main').innerHTML = overview(); document.title = 'Loopboard'; }
   else {
     const t = tab === 'i' ? 'i' : ['notes', 'pages', 'rules', 'talk'].includes(tab) ? tab : '';
     nav(s, t === 'i' ? '' : t, t === 'i' ? [a, b].filter(Boolean).join('/') : '');
@@ -278,7 +337,10 @@ function route() {
 function filter() {
   const w = Q.toLowerCase().split(/\s+/).filter(Boolean);
   const hits = $('#hits'); if (hits) hits.hidden = !w.length && !G;
-  document.querySelectorAll('[data-text]').forEach(e => { e.hidden = !(w.every(x => e.dataset.text.includes(x)) && (!G || !e.dataset.group || e.dataset.group === G)); });
+  document.querySelectorAll('[data-text]').forEach(e => { e.hidden = !(w.every(x => e.dataset.text.includes(x)) && (!G || !e.dataset.group || e.dataset.group === G) && (!R || !e.dataset.role || e.dataset.role === R)); });
+  const grps = document.querySelectorAll('.skgrp');
+  grps.forEach(g => { g.hidden = !g.querySelector('.skcard:not([hidden])'); });
+  const none = $('#skempty'); if (none) none.hidden = !grps.length || [...grps].some(g => !g.hidden);
   if (hits) document.querySelectorAll('.tiles, .tilegrp').forEach(e => e.hidden = !!(w.length || G));
 }
 const lb = $('#lb'), toast = $('#toast');

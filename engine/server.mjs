@@ -15,6 +15,7 @@ import path from 'node:path';
 import { HubError, isInside, token, relTo } from './lib.mjs';
 import { build, TOKEN_PLACEHOLDER } from './build.mjs';
 import { act, ACT_OPS } from './thread.mjs';
+import { skillPaths } from './skills.mjs';
 import * as realPlatform from './platform.mjs';
 
 /** Non-secret id of this hub instance (hash of its data dir), so `loopboard doctor` / `loopboard open` can tell it from any other server on the port. */
@@ -89,7 +90,8 @@ export function createHubServer(cfg, opts = {}) {
         if (op === 'rebuild') { build(cfg); return json(res, 200, { ok: true }); }
         if (op === 'open') {
           const abs = path.resolve(String(p.path || ''));
-          if (!isInside(cfg.roots, abs) || !existsSync(abs)) return json(res, 403, { error: 'path must exist inside the configured roots' });
+          // inside the roots, or exactly a catalogued skill folder / SKILL.md / listed file (skills can live in the home folder or the plugin)
+          if (!existsSync(abs) || !(isInside(cfg.roots, abs) || skillPaths(cfg).has(abs))) return json(res, 403, { error: 'path must exist inside the configured roots (or be a skill in the catalog)' });
           if (p.how === 'editor') { if (!cfg.editor || cfg.editor === 'none') return json(res, 400, { error: 'no editor configured' }); await platform.openInEditor(abs, cfg.editor); }
           else if (p.how === 'reveal') await platform.reveal(abs);
           else return json(res, 400, { error: 'how must be "editor" or "reveal"' });

@@ -10,6 +10,7 @@ import { REPO, BIN, HubError, die, stagesOf, BUILTIN_KINDS, HEALTH, discover, re
 import { build, formatReport } from './build.mjs';
 import { startServer, instanceId } from './server.mjs';
 import * as platform from './platform.mjs';
+import { collectSkills, canonRole, SOURCE_LABEL } from './skills.mjs';
 
 const out = s => process.stdout.write(s + '\n');
 const err = s => process.stderr.write(s + '\n');
@@ -72,7 +73,7 @@ export function newStream(cfg, cwd, pos, flags) {
 
 // ---------------------------------------------------------------- build / serve / open
 export function buildCmd(cfg, flags) {
-  const res = build(cfg);
+  const res = build(cfg, { write: !flags.check });
   out(formatReport(res));
   return flags.check && res.issues.length ? 1 : 0;
 }
@@ -177,6 +178,37 @@ export async function doctor(cwd, env = process.env) {
   const tag = { ok: ' ok  ', warn: 'warn ', fail: 'FAIL ' };
   for (const r of res) { out(`${tag[r.level]} ${r.msg}`); if (r.fix && r.level !== 'ok') out(`       fix: ${r.fix}`); }
   return res.some(r => r.level === 'fail') ? 1 : 0;
+}
+
+// ---------------------------------------------------------------- skills
+const plainTerm = s => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, ' '); // skill text is untrusted: no terminal escape sequences
+export function skills(cfg, flags = {}) {
+  const cat = collectSkills(cfg, { bodies: false });
+  const want = flags.role ? canonRole(flags.role).toLowerCase() : '';
+  const items = cat.items.filter(k => !want || k.role.toLowerCase() === want);
+  if (flags.json) {
+    const rows = items.map(({ id, name, invocation, source, role, summary, description, hint, copy, file, dir, references, scripts, bodyTruncated }) =>
+      ({ id, name, invocation, source, role, summary, description, hint, copy, file, dir, references: references.map(f => f.abs), scripts: scripts.map(f => f.abs), bodyTruncated }));
+    out(JSON.stringify({ count: rows.length, capped: cat.capped, skills: rows }, null, 2));
+    return 0;
+  }
+  if (flags.role && !items.length) { err(`no skills with role "${flags.role}". Roles here: ${cat.roles.map(r => r.role).join(', ') || 'none'}`); return 1; }
+  const src = Object.entries(cat.sources).filter(([, n]) => n).map(([k, n]) => `${SOURCE_LABEL[k].toLowerCase()} ${n}`).join(', ');
+  out(`${items.length} skill(s)${want ? ` with role ${canonRole(flags.role)}` : ''} (${src || 'none'})${cat.capped ? '; the catalog stops at 500 skills' : ''}${cat.userEnabled ? '' : '; user skills hidden (skills.user is false)'}`);
+  for (const { role } of cat.roles) {
+    const list = items.filter(k => k.role === role);
+    if (!list.length) continue;
+    out('');
+    out(role);
+    for (const k of list) {
+      const call = plainTerm(k.copy);
+      out(`  ${call}${k.source === 'plugin' ? '' : `  [${k.sourceLabel.toLowerCase()}]`}`);
+      if (k.summary) out(`      ${plainTerm(k.summary)}`);
+    }
+  }
+  out('');
+  out('The page shows the same catalog with the full "when to use" text: Skills in the sidebar (#skills).');
+  return 0;
 }
 
 // ---------------------------------------------------------------- service

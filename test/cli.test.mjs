@@ -49,6 +49,8 @@ test('single mode with only a STATUS.md and no config file', () => {
   const b = hub(['build', '--check'], { cwd: dir, env });
   assert.equal(b.code, 0, b.out + b.err);
   assert.match(b.out, /\(single\)/);
+  assert.ok(!fs.existsSync(path.join(data, 'index.html')), '--check writes nothing');
+  assert.equal(hub(['build'], { cwd: dir, env }).code, 0);
   assert.ok(fs.existsSync(path.join(data, 'index.html')));
   assert.ok(!fs.existsSync(path.join(dir, 'index.html')));
   const list = hub(['list'], { cwd: dir, env });

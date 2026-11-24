@@ -78,7 +78,7 @@ export function frontmatter(text) {
 export function discover(cfg) {
   const rootFile = path.join(cfg.roots[0], 'STATUS.md');
   const files = cfg.mode === 'single' ? (stat(rootFile)?.isFile() ? [rootFile] : []) : findStatus(cfg);
-  const out = [], used = new Set();
+  const out = [], used = new Set(['skills']); // `skills` is the catalog's own page (#skills)
   for (const file of files) {
     const p = frontmatter(read(file) || '');
     if (!p || !p.fm.title || !p.fm.kind) continue;

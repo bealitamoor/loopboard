@@ -10,6 +10,7 @@ import {
   ENGINE, stagesOf, STATUSES, HEALTH, REQUIRED, SECTIONS, BOARD_COLS, ITEM_KEYS, COMMENT_KINDS,
   read, stat, ls, slug, discover, relTo, readThread,
 } from './lib.mjs';
+import { collectSkills } from './skills.mjs';
 
 const VIDEO = /\.(mp4|mov|webm|m4v)$/i, IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i, PAGE = /\.(html?|svg)$/i;
 export const TOKEN_PLACEHOLDER = '__HUB_TOKEN__';
@@ -194,7 +195,7 @@ export function build(cfg, opts = {}) {
 
   const data = {
     built: new Date().toISOString(), mode, roots: cfg.roots, streams, issues, STATUSES, KINDS: COMMENT_KINDS,
-    url: `http://localhost:${cfg.port}/hub/`, canEditor: !!cfg.editor && cfg.editor !== 'none', token: TOKEN_PLACEHOLDER,
+    skills: collectSkills(cfg), url: `http://localhost:${cfg.port}/hub/`, canEditor: !!cfg.editor && cfg.editor !== 'none', token: TOKEN_PLACEHOLDER,
   };
   const json = JSON.stringify(data).replace(/</g, '\\u003c');
   const css = read(path.join(ENGINE, 'hub.css')), js = read(path.join(ENGINE, 'client.js'));

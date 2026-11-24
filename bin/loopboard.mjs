@@ -10,11 +10,12 @@ const HELP = `loopboard <command>   (short alias: lb)
   init [--single|--multi] [--areas a,b]      write loopboard.config.json here (never overwrites); --single also a starter STATUS.md
   new <folder> --title T --kind K [--area A] create <folder>/STATUS.md from the kind's template
   doctor                                     check Node, config, data dir, port, editor and every STATUS.md
-  build [--check]                            render the page into the data dir; --check fails on format errors
+  build [--check]                            render the page into the data dir; --check only validates (writes nothing), fails on format errors
   serve [--port N]                           run the local server (foreground)
   open                                       open the served page in the default browser (starts nothing)
   service install|remove|status              keep the server running (launchd, Startup-folder launcher on Windows, systemd --user)
   list                                       workstreams with health, waiting count, open comments
+  skills [--role R] [--json]                 the skills catalog: which skill to use for what (plugin, project, user, extra folders)
   thread open|show|add|resolve|reopen|set|order|addrow|rmrow ...   comments and board rows (agent writes only)
 
 kinds: app pipeline campaign research design social plan (+ any "kinds" in loopboard.config.json)
@@ -35,6 +36,7 @@ async function main(argv) {
     case 'open': return C.openCmd(cfg, flags);
     case 'service': return C.service(cfg, pos[0]);
     case 'list': return C.list(cfg);
+    case 'skills': return C.skills(cfg, flags);
     case 'thread': {
       const r = threadCli(cfg, rest);
       if (r.out) console.log(r.out);

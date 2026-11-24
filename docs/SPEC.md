@@ -29,7 +29,7 @@ Roles: developer, designer, social-media poster, planner, SEO — each gets a st
 .claude-plugin/plugin.json        name, version, description, author, license MIT, repository, keywords
 .claude-plugin/marketplace.json   one entry, source "./"
 bin/loopboard.mjs                       the CLI (also runnable as `node bin/loopboard.mjs`)
-engine/                           lib.mjs config.mjs build.mjs thread.mjs server.mjs guard.mjs platform.mjs client.js hub.css
+engine/                           lib.mjs config.mjs build.mjs thread.mjs server.mjs guard.mjs platform.mjs skills.mjs client.js hub.css
 hooks/hooks.json                  SessionStart / PreToolUse / Stop → node "${CLAUDE_PLUGIN_ROOT}/engine/guard.mjs" <event>
 skills/                           core skills + role packs (see below)
 templates/                        STATUS.md per kind, loopboard.config.json example
@@ -49,7 +49,8 @@ README.md LICENSE CHANGELOG.md CONTRIBUTING.md .gitignore .github/workflows/test
   "skip": ["node_modules", ".git", "dist", "build", "vendor", ".venv"],
   "port": 4747,
   "editor": "code",                     // command used for "Open in editor" (code, cursor, zed, subl, idea, none)
-  "kinds": {}                           // optional extra kinds: { "name": ["stage1", "stage2", ...] }
+  "kinds": {},                          // optional extra kinds: { "name": ["stage1", "stage2", ...] }
+  "skills": { "user": true, "dirs": [] } // Skills catalog: read ~/.claude/skills (false hides it); extra skill folders
 }
 ```
 
@@ -74,12 +75,13 @@ Status (all kinds): todo · doing · waiting · blocked · done.
 | `loopboard init [--single\|--multi] [--areas a,b]` | writes `loopboard.config.json` here; with `--single` also a starter `STATUS.md`; never overwrites |
 | `loopboard new <folder> --title T --kind K [--area A]` | creates `<folder>/STATUS.md` from the kind's template |
 | `loopboard doctor` | checks Node version, config, data dir, port, every STATUS.md format; prints fixes |
-| `loopboard build [--check]` | renders the page into the data dir; `--check` fails on format errors |
+| `loopboard build [--check]` | renders the page into the data dir; `--check` only validates (writes nothing) and fails on format errors |
 | `loopboard serve [--port N]` | runs the local server (foreground) |
 | `loopboard open` | opens the served page in the default browser (starts nothing) |
 | `loopboard service install\|remove\|status` | keep the server running in the background: launchd LaunchAgent with KeepAlive (macOS); Startup folder + hidden launcher with a restart loop, no admin (Windows); `systemd --user` with `Restart=on-failure` (Linux). `loopboard serve` in a terminal works everywhere without any service |
 | `loopboard thread open\|show\|add\|resolve\|reopen\|set\|order\|addrow\|rmrow …` | same verbs as the private version; agent writes only |
 | `loopboard list` | workstreams with health, waiting count, open comments |
+| `loopboard skills [--role R] [--json]` | the skills catalog (same data as the page's Skills view), grouped by role; `--json` prints it without bodies |
 
 ## Platform layer (`engine/platform.mjs`)
 
@@ -132,6 +134,24 @@ Role packs (each skill reads/writes the hub through the CLI, never hand-edits ro
 Every SKILL.md: frontmatter `name` = folder name, a `description` with trigger phrases, body < 300 lines, imperative
 steps, the exact `hub` commands, and a "done when" line. Portable per the Agent Skills spec (agentskills.io); Claude
 Code-only fields only when needed.
+
+## Skills catalog (`engine/skills.mjs`, page route `#skills` and `#skills/<name>`, CLI `loopboard skills`)
+
+Collected at build time into the page data (`skills`), from: the plugin's `skills/` (`/loopboard:<name>`), `.claude/skills` in
+each root, `~/.claude/skills` when config `skills.user` is not false (default true), and `skills.dirs`. Per skill: `name`,
+`description`, `argument-hint`, `category` or `metadata.role`, the body, and the files in `references/` and `scripts/`.
+
+- **Role:** `category` / `metadata.role` if present (`dev` and `developer` are the same), else the name prefix (`hub-` Core,
+  `dev-` Developer, `design-` Designer, `social-` Social, `plan-` Planner, `seo-` SEO), else Other, grouped by source.
+- **Card:** name, summary (first sentence), "When to use" (the rest of the description from a "Use when" clause; hidden when
+  empty), the hint only when there is one, a source badge and Copy (`/loopboard:hub-work <stream> <ID>`: the first form of the hint).
+- **Detail:** the body through the page's `md()` renderer (HTML escaped, no raw HTML, soft-wrapped lines joined), the file
+  lists and Open in editor through `POST /api/open`, which accepts a path outside the roots only when it is exactly a
+  catalogued skill folder, `SKILL.md` or listed file.
+- **Safety:** everything is escaped text; a file is read up to 200 KB, 500 skills at most, about 8 MB of body text per page;
+  unreadable skills are skipped; a link inside a skill folder that resolves outside it is never read or listed (a skill
+  folder that is itself a link is followed). A stream titled "Skills" gets the id `skills-2` so `#skills` stays the catalog.
+- Tests: `test/skills-catalog.test.mjs`.
 
 ## Tests and CI
 

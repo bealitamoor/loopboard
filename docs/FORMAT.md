@@ -119,6 +119,22 @@ Each kind is a stage set; the stages are the progress dots on the Board. Add you
 | `social` | social posts | `idea` > `draft` > `visual` > `scheduled` > `posted` > `measured` |
 | `plan` | a personal planner board | `backlog` > `this-week` > `today` > `done` |
 
+## Config: skills catalog
+
+`loopboard.config.json` has one key for the Skills catalog page (`#skills`, `loopboard skills`):
+
+```json
+"skills": { "user": true, "dirs": ["../shared-skills"] }
+```
+
+- `user` (boolean, default `true`): include `~/.claude/skills/*/SKILL.md`. `false` hides them. A missing key keeps the default.
+- `dirs` (array of folders, default `[]`): extra folders holding `<name>/SKILL.md`, relative to the config file; `~` is
+  your home folder. A folder that itself contains a `SKILL.md` is read as one skill.
+
+The plugin's own skills and `.claude/skills` in every `roots` folder are always included. A skill's role comes from
+`category` or `metadata.role` in its frontmatter, else its name prefix (`hub-` Core, `dev-` Developer, `design-`
+Designer, `social-` Social, `plan-` Planner, `seo-` SEO), else Other.
+
 ## Threads
 
 Each workstream can have a thread file next to its `STATUS.md` (one JSON object per line). It holds the comments on

@@ -7,6 +7,12 @@ projects, tasks and agent instructions in plain files instead of another SaaS.
 
 ![Loopboard overview: every project, the agent inbox and status counts](docs/screenshot.png)
 
+<details><summary>The Skills catalog: which skill to use for what</summary>
+
+![Loopboard Skills catalog with role filter, search and copy buttons](docs/screenshot-skills.png)
+
+</details>
+
 <details><summary>An item page: stages, actions and the comment thread with your agent</summary>
 
 ![Loopboard item page with a comment thread](docs/screenshot-item.png)
@@ -140,6 +146,37 @@ Run them as `/loopboard:<name>` in the plugin, or just say what you want; each s
 | SEO | `seo-indexing` | Track published pages until indexed; what to request and check |
 | SEO | `seo-weekly` | Weekly SEO report with a numbers table and honest gaps |
 
+## Skills catalog
+
+Not sure which skill to use? Open **Skills** in the sidebar (`#skills`). Every skill is a card with a one-line summary,
+a "When to use" block with its trigger phrases, the argument hint, a source badge and a **Copy** button that puts the
+command on your clipboard (for example `/loopboard:hub-work <stream> <ID>`). Filter by role, search by name or
+description, and click a card for the full `SKILL.md`, its `references/` and `scripts/` files and **Open in editor**.
+The terminal has the same list: `loopboard skills [--role dev] [--json]`.
+
+Where the skills come from:
+
+| source | folder | invoked as |
+|---|---|---|
+| Plugin | this plugin's `skills/` | `/loopboard:<name>` |
+| Project | `.claude/skills/*/SKILL.md` in each configured root | `/<name>` |
+| User | `~/.claude/skills/*/SKILL.md` | `/<name>` |
+| Extra | folders listed in `skills.dirs` | `/<name>` |
+
+Skills are grouped by role: a `category` (or `metadata.role`) in the frontmatter wins, else the name prefix
+(`hub-` Core, `dev-` Developer, `design-` Designer, `social-` Social, `plan-` Planner, `seo-` SEO); the rest is Other,
+shown by source. Config keys in `loopboard.config.json`:
+
+```json
+"skills": { "user": true, "dirs": ["../shared-skills"] }
+```
+
+- `user`: read `~/.claude/skills` (default `true`; `false` hides your personal skills, for example before a screen share).
+- `dirs`: extra folders that contain skill folders (relative to the config file; `~` works).
+
+Skills can come from anywhere, so the page only shows them as escaped text. A skill file is cut at 200 KB, the catalog
+stops at 500 skills, unreadable files are skipped, and a link inside a skill folder that points outside it is ignored.
+
 ## Your day with loopboard
 
 **Developer.** Morning: `/loopboard:hub-standup` shows what is waiting on you and what is blocked. Leave an
@@ -206,6 +243,8 @@ skills follow the open Agent Skills format, so other agents that read `SKILL.md`
 
 **Where does my data live?** `STATUS.md` and thread files in your project folders; the generated page and token in
 the data directory above. Nothing is uploaded.
+
+**Can I hide my personal skills from the catalog?** Yes: `"skills": { "user": false }` in `loopboard.config.json`.
 
 **Can I add my own stages or areas?** Yes: `kinds` and `areas` in `loopboard.config.json`. See [docs/FORMAT.md](docs/FORMAT.md).
 

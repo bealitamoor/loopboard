@@ -1,5 +1,6 @@
 // loopboard.config.json: discovery (walk up from cwd, then $LOOPBOARD_CONFIG, then the data dir) and defaults.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { dataDir } from './platform.mjs';
 import { HubError } from './lib.mjs';
@@ -14,6 +15,7 @@ export const DEFAULTS = {
   editor: 'code',
   kinds: {},
   guard: true,
+  skills: { user: true, dirs: [] },
 };
 export const MODES = ['auto', 'single', 'multi'];
 
@@ -51,8 +53,18 @@ export function normalize(raw, base) {
     if (!/^[a-z][a-z0-9-]*$/.test(k)) problems.push(`kind name \`${k}\` must be lowercase letters, digits and dashes`);
     if (!Array.isArray(v) || !v.length || v.some(s => typeof s !== 'string' || !/^[a-z0-9][a-z0-9-]*$/.test(s))) problems.push(`kind \`${k}\` needs a list of lowercase stage names`);
   }
+  // skills: { user: true|false, dirs: [folders] }; a partial object keeps the defaults for the missing key
+  const sk = c.skills;
+  if (!sk || typeof sk !== 'object' || Array.isArray(sk)) problems.push('`skills` must be an object like { "user": true, "dirs": [] }');
+  else {
+    if (sk.user !== undefined && typeof sk.user !== 'boolean') problems.push('`skills.user` must be true or false');
+    if (sk.dirs !== undefined) strs('skills.dirs', sk.dirs);
+  }
   if (problems.length) throw new HubError('invalid config: ' + problems.join('; '));
-  return { ...c, roots: c.roots.map(r => path.resolve(base, r)), base };
+  const home = (process.platform === 'win32' ? process.env.USERPROFILE || process.env.HOME : process.env.HOME || process.env.USERPROFILE) || os.homedir();
+  const dir = d => path.resolve(base, d === '~' ? home : /^~[\\/]/.test(d) ? path.join(home, d.slice(2)) : d);
+  const skills = { user: c.skills.user !== false, dirs: (c.skills.dirs || []).map(dir) };
+  return { ...c, skills, roots: c.roots.map(r => path.resolve(base, r)), base };
 }
 
 // → { file, base, roots (absolute), mode, areas, skip, port, editor, kinds, guard, dataDir }

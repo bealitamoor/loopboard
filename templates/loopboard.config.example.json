@@ -8,5 +8,6 @@
   "kinds": {
     "support": ["new", "triage", "in-progress", "waiting-customer", "resolved"]
   },
-  "guard": true
+  "guard": true,
+  "skills": { "user": true, "dirs": [] }
 }

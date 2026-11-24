@@ -3,7 +3,7 @@
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/), and the
 project uses [semantic versioning](https://semver.org/).
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-24
 
 ### Added
 - Local dashboard over plain `STATUS.md` files: one file per workstream, a board with stages and status, an items
@@ -17,4 +17,6 @@ project uses [semantic versioning](https://semver.org/).
   social-calendar, social-post, social-recap (social); plan-week, plan-today, plan-review (planner);
   seo-calendar, seo-article, seo-indexing, seo-weekly (SEO).
 - Support for macOS, Windows and Linux; zero dependencies (Node 18 or newer).
+- Skills catalog: a Skills page (`#skills`, `#skills/<name>`) and `loopboard skills [--role R] [--json]` listing plugin, project, user and
+  extra-folder skills by role, with search, copy-ready commands and the full `SKILL.md`; config key `skills` (`user`, `dirs`).
 - Docs: README, `docs/FORMAT.md`, CONTRIBUTING, AGENTS, `docs/PUBLISHING.md`.
